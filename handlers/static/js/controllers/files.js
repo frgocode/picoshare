@@ -50,6 +50,7 @@ export async function uploadFile(
   note,
   downloadPassphrase,
   progressFn,
+  folderId,
 ) {
   const formData = new FormData();
   formData.append("file", file);
@@ -59,11 +60,11 @@ export async function uploadFile(
   if (downloadPassphrase) {
     formData.append("downloadPassphrase", downloadPassphrase);
   }
-  return uploadFormData(
-    `/api/entry?expiration=${encodeURIComponent(expirationTime)}`,
-    formData,
-    progressFn,
-  );
+  let url = `/api/entry?expiration=${encodeURIComponent(expirationTime)}`;
+  if (folderId) {
+    url += `&folder=${encodeURIComponent(folderId)}`;
+  }
+  return uploadFormData(url, formData, progressFn);
 }
 
 export async function guestUploadFile(

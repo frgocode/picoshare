@@ -36,6 +36,7 @@
     import { showElement, hideElement } from "/js/lib/bulma.js";
     import { copyToClipboard } from "/js/lib/clipboard.js";
     import { makeShortLink } from "/js/lib/links.js";
+    import { createFolder } from "/js/controllers/folders.js";
 
     const errorContainer = document.getElementById("error");
 
@@ -62,11 +63,139 @@
           });
       });
     });
+
+    const createForm = document.getElementById("create-folder-form");
+    if (createForm) {
+      createForm.addEventListener("submit", (evt) => {
+        evt.preventDefault();
+        const nameInput = document.getElementById("folder-name");
+        const parentEl = document.getElementById("current-folder-id");
+        const parentId = parentEl ? parentEl.value : null;
+        hideElement(errorContainer);
+
+        createFolder(nameInput.value, parentId)
+          .then(() => {
+            window.location.reload();
+          })
+          .catch((error) => {
+            document.getElementById("error-message").innerText = error;
+            showElement(errorContainer);
+          });
+      });
+    }
   </script>
 {{ end }}
 
 {{ define "content" }}
   <h1 class="h1">Files</h1>
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        {{ if .CurrentFolder }}
+          <a href="/files">Root</a>
+        {{ else }}
+          Root
+        {{ end }}
+      </li>
+      {{ range .FolderPath }}
+        <li class="breadcrumb-item">
+          <a href="/files?folder={{ .ID }}">{{ .Name }}</a>
+        </li>
+      {{ end }}
+    </ol>
+  </nav>
+
+  {{ if .CurrentFolder }}
+    <input
+      type="hidden"
+      id="current-folder-id"
+      value="{{ .CurrentFolder.ID }}"
+    />
+  {{ end }}
+
+
+  <h2 class="h2">Folders</h2>
+
+  {{ if .Folders }}
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .Folders }}
+            <tr test-data-foldername="{{ .Name }}">
+              <td class="align-middle">
+                <a href="/files?folder={{ .ID }}">{{ .Name }}</a>
+              </td>
+              <td class="align-middle">
+                <div class="d-flex justify-content-end gap-2">
+                  <a
+                    class="btn btn-outline-primary btn-sm file-action-btn"
+                    href="/folders/{{ .ID }}/edit"
+                    role="button"
+                    aria-label="Rename folder {{ .Name }}"
+                  >
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </a>
+                  <a
+                    class="btn btn-outline-primary btn-sm file-action-btn"
+                    href="/folders/{{ .ID }}/move"
+                    role="button"
+                    aria-label="Move folder {{ .Name }}"
+                  >
+                    <i class="fa-solid fa-folder-open"></i>
+                  </a>
+                  <a
+                    class="btn btn-outline-danger btn-sm file-action-btn"
+                    href="/folders/{{ .ID }}/confirm-delete"
+                    role="button"
+                    aria-label="Delete folder {{ .Name }}"
+                  >
+                    <i class="fa-solid fa-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+  {{ else }}
+    <p>No folders here.</p>
+  {{ end }}
+
+
+  <form id="create-folder-form" class="d-flex gap-2 my-3">
+    <input
+      id="folder-name"
+      class="form-control"
+      type="text"
+      placeholder="New folder name"
+      maxlength="255"
+      required
+    />
+    <button class="btn btn-primary" type="submit">Create folder</button>
+  </form>
+
+  <h2 class="h2">Files</h2>
+
+  {{ if .CurrentFolder }}
+    <p>
+      <a href="/?folder={{ .CurrentFolder.ID }}"
+        >Upload a file to this folder</a
+      >
+    </p>
+  {{ else }}
+    <p>
+      <a href="/">Upload a file</a>
+    </p>
+  {{ end }}
+
 
   <div class="table-responsive">
     <table class="table">
@@ -116,6 +245,14 @@
                   aria-label="Edit"
                 >
                   <i class="fa-solid fa-pen-to-square"></i>
+                </a>
+                <a
+                  class="btn btn-outline-primary btn-sm file-action-btn"
+                  href="/files/{{ .ID }}/move"
+                  role="button"
+                  aria-label="Move"
+                >
+                  <i class="fa-solid fa-folder-open"></i>
                 </a>
                 <button
                   class="btn btn-outline-primary btn-sm file-action-btn"

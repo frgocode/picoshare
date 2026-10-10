@@ -178,7 +178,43 @@ func (s Server) fileIndexGet() http.HandlerFunc {
 	t := parseTemplatesWithFuncs(fns, "templates/pages/file-index.html")
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		em, err := s.store.GetEntriesMetadata()
+		currentFolderID, err := parseFolderIDFromQuery(r, "folder")
+		if err != nil {
+			log.Printf("invalid folder query parameter: %v", err)
+			http.Error(w, fmt.Sprintf("Invalid folder: %v", err), http.StatusBadRequest)
+			return
+		}
+
+		var currentFolder *picoshare.Folder
+		var folderPath []picoshare.Folder
+		if currentFolderID != nil {
+			folder, err := s.store.GetFolder(*currentFolderID)
+			if _, ok := errors.AsType[store.FolderNotFoundError](err); ok {
+				http.Error(w, "Folder not found", http.StatusNotFound)
+				return
+			} else if err != nil {
+				log.Printf("failed to retrieve folder: %v", err)
+				http.Error(w, "failed to retrieve folder", http.StatusInternalServerError)
+				return
+			}
+			currentFolder = &folder
+
+			folderPath, err = s.store.GetFolderPath(*currentFolderID)
+			if err != nil {
+				log.Printf("failed to retrieve folder path: %v", err)
+				http.Error(w, "failed to retrieve folder", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		folders, err := s.store.ListChildFolders(currentFolderID)
+		if err != nil {
+			log.Printf("failed to retrieve folders: %v", err)
+			http.Error(w, "failed to retrieve file index", http.StatusInternalServerError)
+			return
+		}
+
+		em, err := s.store.GetEntriesMetadataInFolder(currentFolderID)
 		if err != nil {
 			log.Printf("failed to retrieve entries metadata: %v", err)
 			http.Error(w, "failed to retrieve file index", http.StatusInternalServerError)
@@ -189,10 +225,16 @@ func (s Server) fileIndexGet() http.HandlerFunc {
 		})
 		renderTemplate(w, t, struct {
 			commonProps
-			Files []picoshare.UploadMetadata
+			Files         []picoshare.UploadMetadata
+			Folders       []picoshare.Folder
+			CurrentFolder *picoshare.Folder
+			FolderPath    []picoshare.Folder
 		}{
-			commonProps: makeCommonProps("PicoShare - Files", r.Context()),
-			Files:       em,
+			commonProps:   makeCommonProps("PicoShare - Files", r.Context()),
+			Files:         em,
+			Folders:       folders,
+			CurrentFolder: currentFolder,
+			FolderPath:    folderPath,
 		})
 	}
 }
@@ -504,17 +546,43 @@ func (s Server) uploadGet() http.HandlerFunc {
 
 		expirationOptions = append(expirationOptions, expirationOption{"Custom", time.Time{}, false})
 
+		folders, err := s.store.ListAllFolders()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to list folders: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		selectedFolderID, err := parseFolderIDFromQuery(r, "folder")
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Invalid folder: %v", err), http.StatusBadRequest)
+			return
+		}
+		if selectedFolderID != nil {
+			if _, err := s.store.GetFolder(*selectedFolderID); err != nil {
+				if _, ok := errors.AsType[store.FolderNotFoundError](err); ok {
+					http.Error(w, "Folder not found", http.StatusNotFound)
+					return
+				}
+				http.Error(w, fmt.Sprintf("failed to retrieve folder: %v", err), http.StatusInternalServerError)
+				return
+			}
+		}
+
 		renderTemplate(w, t, struct {
 			commonProps
 			ExpirationOptions   []expirationOption
 			MaxNoteLength       int
 			MaxPassphraseLength int
 			GuestLinkMetadata   picoshare.GuestLink
+			Folders             []picoshare.Folder
+			SelectedFolderID    *picoshare.FolderID
 		}{
 			commonProps:         makeCommonProps("PicoShare - Upload", r.Context()),
 			MaxNoteLength:       parse.MaxFileNoteBytes,
 			MaxPassphraseLength: picoshare.MaxPassphraseLength,
 			ExpirationOptions:   expirationOptions,
+			Folders:             folders,
+			SelectedFolderID:    selectedFolderID,
 		})
 	}
 }

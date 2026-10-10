@@ -1,0 +1,71 @@
+{{ define "script-tags" }}
+  <script type="module" nonce="{{ .CspNonce }}">
+    import { renameFolder } from "/js/controllers/folders.js";
+    import { showElement, hideElement } from "/js/lib/bulma.js";
+
+    const editForm = document.getElementById("edit-folder-form");
+    const errorContainer = document.getElementById("error");
+
+    document.getElementById("cancel-btn").addEventListener("click", () => {
+      history.back();
+    });
+
+    editForm.addEventListener("submit", (evt) => {
+      evt.preventDefault();
+      const id = editForm.getAttribute("data-folder-id");
+      const name = document.getElementById("folder-name").value;
+      if (!id || !name) {
+        return;
+      }
+
+      hideElement(errorContainer);
+
+      renameFolder(id, name)
+        .then(() => {
+          document.location = "/files";
+        })
+        .catch((error) => {
+          document.getElementById("error-message").innerText = error;
+          showElement(errorContainer);
+        });
+    });
+  </script>
+{{ end }}
+
+{{ define "content" }}
+  <h1 class="h1">Rename Folder</h1>
+
+  {{ with .Folder }}
+    <form id="edit-folder-form" class="form-panel" data-folder-id="{{ .ID }}">
+      <div class="form-panel-body">
+        <div class="mb-4">
+          <label class="form-label" for="folder-name">Folder name</label>
+          <input
+            id="folder-name"
+            class="form-control form-control-lg"
+            type="text"
+            value="{{ .Name }}"
+            maxlength="255"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-panel-footer">
+        <button class="btn btn-outline-primary" id="cancel-btn" type="button">
+          Cancel
+        </button>
+        <button class="btn btn-primary" type="submit">
+          <i class="fa-solid fa-floppy-disk me-2"></i>
+          Save
+        </button>
+      </div>
+    </form>
+
+    <div id="error" class="d-none my-3">
+      <div class="alert alert-danger" role="alert">
+        <div id="error-message">Placeholder error.</div>
+      </div>
+    </div>
+  {{ end }}
+{{ end }}

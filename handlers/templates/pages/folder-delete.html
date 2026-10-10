@@ -1,0 +1,64 @@
+{{ define "style-tags" }}
+  <style nonce="{{ .CspNonce }}">
+    .foldername {
+      font-family: "Courier New", Courier, monospace;
+    }
+  </style>
+{{ end }}
+
+{{ define "script-tags" }}
+  <script type="module" nonce="{{ .CspNonce }}">
+    import { deleteFolder } from "/js/controllers/folders.js";
+    import { showElement, hideElement } from "/js/lib/bulma.js";
+
+    const deleteForm = document.getElementById("delete-folder-form");
+    const errorContainer = document.getElementById("error");
+
+    deleteForm.addEventListener("submit", (evt) => {
+      evt.preventDefault();
+      const idEl = deleteForm.elements.namedItem("folder-id");
+      if (!idEl) {
+        return;
+      }
+      const id = idEl.value;
+      hideElement(errorContainer);
+
+      deleteFolder(id)
+        .then(() => {
+          document.location = "/files";
+        })
+        .catch((error) => {
+          document.getElementById("error-message").innerText = error;
+          showElement(errorContainer);
+        });
+    });
+  </script>
+{{ end }}
+
+{{ define "content" }}
+  <h1 class="h1">Delete Folder</h1>
+
+  {{ with .Folder }}
+    <form id="delete-folder-form">
+      <input type="hidden" name="folder-id" value="{{ .ID }}" />
+      <p>
+        Permanently delete folder <span class="foldername">{{ .Name }}</span>?
+      </p>
+      <p>Only empty folders can be deleted.</p>
+
+      <div class="d-flex justify-content-end gap-2 my-4">
+        <a class="btn btn-outline-primary" href="/files"> Cancel </a>
+        <button class="btn btn-danger" id="delete-btn" type="submit">
+          <i class="fa-solid fa-trash me-2"></i>
+          Delete
+        </button>
+      </div>
+    </form>
+
+    <div id="error" class="d-none my-3">
+      <div class="alert alert-danger" role="alert">
+        <div id="error-message">Placeholder error.</div>
+      </div>
+    </div>
+  {{ end }}
+{{ end }}

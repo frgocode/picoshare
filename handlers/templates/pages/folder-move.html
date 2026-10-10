@@ -1,0 +1,75 @@
+{{ define "script-tags" }}
+  <script type="module" nonce="{{ .CspNonce }}">
+    import { moveFolder } from "/js/controllers/folders.js";
+    import { showElement, hideElement } from "/js/lib/bulma.js";
+
+    const moveForm = document.getElementById("move-folder-form");
+    const errorContainer = document.getElementById("error");
+
+    document.getElementById("cancel-btn").addEventListener("click", () => {
+      history.back();
+    });
+
+    moveForm.addEventListener("submit", (evt) => {
+      evt.preventDefault();
+      const id = moveForm.getAttribute("data-folder-id");
+      const parentSelect = document.getElementById("parent-folder");
+      if (!id) {
+        return;
+      }
+
+      hideElement(errorContainer);
+
+      moveFolder(id, parentSelect.value || null)
+        .then(() => {
+          document.location = "/files";
+        })
+        .catch((error) => {
+          document.getElementById("error-message").innerText = error;
+          showElement(errorContainer);
+        });
+    });
+  </script>
+{{ end }}
+
+{{ define "content" }}
+  <h1 class="h1">Move Folder</h1>
+
+  {{ with .Folder }}
+    <p>Move folder <strong>{{ .Name }}</strong> to a new location.</p>
+
+    <form id="move-folder-form" class="form-panel" data-folder-id="{{ .ID }}">
+      <div class="form-panel-body">
+        <div class="mb-4">
+          <label class="form-label" for="parent-folder">Destination</label>
+          <select id="parent-folder" class="form-select">
+            <option value="">Root</option>
+            {{ range $.Folders }}
+              {{ if ne .ID.String $.Folder.ID.String }}
+                <option value="{{ .ID }}">
+                  {{- .Name -}}
+                </option>
+              {{ end }}
+            {{ end }}
+          </select>
+          <div class="form-text">
+            Choose Root to move this folder to the top level
+          </div>
+        </div>
+      </div>
+
+      <div class="form-panel-footer">
+        <button class="btn btn-outline-primary" id="cancel-btn" type="button">
+          Cancel
+        </button>
+        <button class="btn btn-primary" type="submit">Move</button>
+      </div>
+    </form>
+
+    <div id="error" class="d-none my-3">
+      <div class="alert alert-danger" role="alert">
+        <div id="error-message">Placeholder error.</div>
+      </div>
+    </div>
+  {{ end }}
+{{ end }}

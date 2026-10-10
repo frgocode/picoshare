@@ -98,6 +98,7 @@
       "download-passphrase",
     );
     const uploadAnotherBtn = document.getElementById("upload-another-btn");
+    const folderSelect = document.getElementById("folder-select");
 
     function getGuestLinkMetdata() {
       const el = document.getElementById("guest-link-metadata");
@@ -125,6 +126,13 @@
 
     function readDownloadPassphrase() {
       return downloadPassphraseInput.value || null;
+    }
+
+    function readFolderId() {
+      if (!folderSelect) {
+        return null;
+      }
+      return folderSelect.value || null;
     }
 
     function populateEditButton(entryId) {
@@ -176,6 +184,7 @@
           readNote(),
           readDownloadPassphrase(),
           updateProgress,
+          readFolderId(),
         );
       };
       if (guestLinkMetadata) {
@@ -394,6 +403,28 @@
         {{ end }}
 
         {{ if not .GuestLinkMetadata.ID }}
+          <div class="mt-4">
+            <label class="form-label" for="folder-select">
+              <i class="fa-solid fa-folder fa-fw label-icon"></i>Folder
+              <i>(optional)</i>
+            </label>
+            <select id="folder-select" class="form-select" autocomplete="off">
+              <option value="">Root</option>
+              {{ range .Folders }}
+                <option
+                  value="{{ .ID }}"
+                  {{ if $.SelectedFolderID }}
+                    {{ if eq .ID.String $.SelectedFolderID.String }}
+                      selected
+                    {{ end }}
+                  {{ end }}
+                >
+                  {{- .Name -}}
+                </option>
+              {{ end }}
+            </select>
+            <div class="form-text">Choose where to save this upload</div>
+          </div>
           <div class="mt-4">
             <label class="form-label" for="note">
               <i class="fa-solid fa-note-sticky fa-fw label-icon"></i>Note
