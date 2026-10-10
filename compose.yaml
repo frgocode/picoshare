@@ -1,0 +1,11 @@
+services:
+  picosherito:
+    image: cr.umapps.net/umapps/picosherito:${IMAGE_TAG:-beta}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+        - linux/arm64
+      tags:
+        - cr.umapps.net/umapps/picosherito:latest
