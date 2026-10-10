@@ -79,7 +79,7 @@ test("moves a file between folders and back to root", async ({ page }) => {
   await page
     .getByRole("row")
     .filter({ hasText: "movable.txt" })
-    .getByRole("link", { name: "Move" })
+    .getByRole("button", { name: "Move" })
     .click();
   await expect(page).toHaveURL(/\/files\/.+\/move$/);
   await page
@@ -108,7 +108,7 @@ test("moves a file between folders and back to root", async ({ page }) => {
   await page
     .getByRole("row")
     .filter({ hasText: "movable.txt" })
-    .getByRole("link", { name: "Move" })
+    .getByRole("button", { name: "Move" })
     .click();
   await page.locator("#destination-folder").selectOption({ label: "Root" });
   await page.getByRole("button", { name: "Move" }).click();
@@ -139,7 +139,7 @@ test("renames a folder and rejects duplicate names", async ({ page }) => {
   await page
     .getByRole("row")
     .filter({ hasText: "OriginalName" })
-    .getByRole("link", { name: /Rename folder/ })
+    .getByRole("button", { name: /Rename folder/ })
     .click();
   await expect(page).toHaveURL(/\/folders\/.+\/edit$/);
   await page.locator("#folder-name").fill("RenamedFolder");
@@ -152,7 +152,7 @@ test("renames a folder and rejects duplicate names", async ({ page }) => {
   await page
     .getByRole("row")
     .filter({ hasText: "RenamedFolder" })
-    .getByRole("link", { name: /Rename folder/ })
+    .getByRole("button", { name: /Rename folder/ })
     .click();
   await page.locator("#folder-name").fill("OtherName");
   await page.getByRole("button", { name: "Save" }).click();
@@ -187,7 +187,7 @@ test("moves a folder and rejects circular moves", async ({ page }) => {
   await page
     .getByRole("row")
     .filter({ hasText: "ParentFolder" })
-    .getByRole("link", { name: /Move folder/ })
+    .getByRole("button", { name: /Move folder/ })
     .click();
   await page.locator("#parent-folder").selectOption({ label: "SiblingFolder" });
   await page.getByRole("button", { name: "Move" }).click();
@@ -218,7 +218,7 @@ test("deletes an empty folder and rejects deletion of a nonempty folder", async 
   await page
     .getByRole("row")
     .filter({ hasText: "EmptyFolder" })
-    .getByRole("link", { name: /Delete folder/ })
+    .getByRole("button", { name: /Delete folder/ })
     .click();
   await expect(page).toHaveURL(/\/folders\/.+\/confirm-delete$/);
   await page.getByRole("button", { name: "Delete" }).click();
@@ -230,7 +230,7 @@ test("deletes an empty folder and rejects deletion of a nonempty folder", async 
   await page
     .getByRole("row")
     .filter({ hasText: "FullFolder" })
-    .getByRole("link", { name: /Delete folder/ })
+    .getByRole("button", { name: /Delete folder/ })
     .click();
   await page.getByRole("button", { name: "Delete" }).click();
   await expect(page.locator("#error-message")).toBeVisible();
