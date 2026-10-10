@@ -301,6 +301,15 @@ func (s Store) DeleteEntry(id picoshare.EntryID) error {
 
 	if _, err := tx.Exec(`
 	DELETE FROM
+		virtual_folders
+	WHERE
+		entry_id = :entry_id`, sql.Named("entry_id", id.String())); err != nil {
+		log.Printf("delete from virtual_folders table failed, aborting transaction: %v", err)
+		return err
+	}
+
+	if _, err := tx.Exec(`
+	DELETE FROM
 		entries
 	WHERE
 		id = :entry_id`, sql.Named("entry_id", id.String())); err != nil {

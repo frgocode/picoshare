@@ -70,6 +70,22 @@ func (s Store) deleteExpiredEntries() error {
 
 	if _, err = tx.Exec(`
    DELETE FROM
+   	virtual_folders
+   WHERE
+   	entry_id IN (
+   		SELECT
+   			id
+   		FROM
+   			entries
+   		WHERE
+   			entries.expiration_time IS NOT NULL AND
+   			entries.expiration_time < :current_time
+   	);`, sql.Named("current_time", currentTime)); err != nil {
+		return err
+	}
+
+	if _, err = tx.Exec(`
+   DELETE FROM
    	entries
    WHERE
    	entries.expiration_time IS NOT NULL AND
@@ -110,6 +126,26 @@ func (s Store) deleteOrphanedRows() error {
 	}
 
 	log.Printf("purge completed successfully (%d rows affected)", ra)
+
+	if _, err := s.db.Exec(`
+	DELETE FROM
+		virtual_folders
+	WHERE
+		entry_id IS NOT NULL AND entry_id NOT IN (
+			SELECT id FROM entries
+		)`); err != nil {
+		return err
+	}
+
+	if _, err := s.db.Exec(`
+	DELETE FROM
+		virtual_folders
+	WHERE
+		parent_id IS NOT NULL AND parent_id NOT IN (
+			SELECT id FROM virtual_folders WHERE entry_id IS NULL
+		)`); err != nil {
+		return err
+	}
 
 	return nil
 }
