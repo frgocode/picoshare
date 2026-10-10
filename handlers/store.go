@@ -23,4 +23,15 @@ type Store interface {
 	GetEntryDownloads(id picoshare.EntryID) ([]picoshare.DownloadRecord, error)
 	ReadSettings() (picoshare.Settings, error)
 	UpdateSettings(picoshare.Settings) error
+	CreateFolder(name picoshare.FolderName, parentID *picoshare.FolderID) (picoshare.Folder, error)
+	GetFolder(id picoshare.FolderID) (picoshare.Folder, error)
+	ListChildFolders(parentID *picoshare.FolderID) ([]picoshare.Folder, error)
+	ListAllFolders() ([]picoshare.Folder, error)
+	GetFolderPath(id picoshare.FolderID) ([]picoshare.Folder, error)
+	RenameFolder(id picoshare.FolderID, name picoshare.FolderName) error
+	MoveFolder(id picoshare.FolderID, newParentID *picoshare.FolderID) error
+	DeleteFolder(id picoshare.FolderID) error
+	SetFileFolder(entryID picoshare.EntryID, folderID *picoshare.FolderID) error
+	GetFileFolder(entryID picoshare.EntryID) (*picoshare.Folder, error)
+	GetEntriesMetadataInFolder(folderID *picoshare.FolderID) ([]picoshare.UploadMetadata, error)
 }

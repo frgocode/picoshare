@@ -42,6 +42,25 @@ func (s Server) entryPost() http.HandlerFunc {
 			return
 		}
 
+		folderID, err := parseFolderIDFromQuery(r, "folder")
+		if err != nil {
+			log.Printf("invalid folder URL parameter: %v", err)
+			http.Error(w, fmt.Sprintf("Invalid folder URL parameter: %v", err), http.StatusBadRequest)
+			return
+		}
+
+		if folderID != nil {
+			if _, err := s.store.GetFolder(*folderID); err != nil {
+				if _, ok := errors.AsType[store.FolderNotFoundError](err); ok {
+					http.Error(w, "Destination folder not found", http.StatusNotFound)
+					return
+				}
+				log.Printf("failed to retrieve destination folder: %v", err)
+				http.Error(w, fmt.Sprintf("Failed to retrieve destination folder: %v", err), http.StatusInternalServerError)
+				return
+			}
+		}
+
 		// We're intentionally not limiting the size of the request because we
 		// assume that the uploading user is trusted, so they can upload files of
 		// any size they want.
@@ -55,6 +74,17 @@ func (s Server) entryPost() http.HandlerFunc {
 				http.Error(w, fmt.Sprintf("invalid request: %s", err), http.StatusBadRequest)
 			}
 			return
+		}
+
+		if folderID != nil {
+			if err := s.store.SetFileFolder(id, folderID); err != nil {
+				log.Printf("failed to place uploaded file %v in folder %v: %v", id, *folderID, err)
+				if deleteErr := s.store.DeleteEntry(id); deleteErr != nil {
+					log.Printf("failed to clean up uploaded file %v after folder placement failure: %v", id, deleteErr)
+				}
+				http.Error(w, fmt.Sprintf("Failed to place file in folder: %v", err), http.StatusInternalServerError)
+				return
+			}
 		}
 
 		respondJSON(w, EntryPostResponse{ID: id.String()})
